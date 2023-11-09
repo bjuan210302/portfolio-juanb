@@ -1,0 +1,35 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Presentation from "../components/Presentation.astro";
+import Card from '../components/Card.astro'
+---
+
+<script>
+	document.addEventListener("DOMContentLoaded", function () {
+		var text = document.querySelector(".text")!;
+
+		setTimeout(() => text.classList.remove("hidden"), 500);
+		window.addEventListener("scroll", function () {
+			var scroll = window.scrollY;
+
+			if (scroll >= 20) {
+				text.classList.add("hidden");
+			} else {
+				text.classList.remove("hidden");
+			}
+		});
+	});
+</script>
+<Layout title="Welcome to Astro.">
+	<Presentation />
+
+	<div class="grid grid-cols-2 grid-rows-3 gap-16 mx-auto max-w-[55%] pt-16">
+		<Card />
+		<Card />
+		<Card />
+		<Card />
+		<Card />
+	</div>
+</Layout>
+
+<style lang="scss"></style>

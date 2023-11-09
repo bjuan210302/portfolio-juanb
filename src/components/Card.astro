@@ -1,0 +1,17 @@
+---
+interface Props {
+	title: string;
+	body: string;
+	href: string;
+}
+
+const { href, title, body } = Astro.props;
+---
+
+<div
+	class="bg-[#292929] h-64 w-full rounded-lg transition-all"
+>
+	<h3 class="text-2xl font-extralight text-white p-6">
+		the quick brown fox jumps over the lazy dog
+	</h3>
+</div>
