@@ -111,10 +111,98 @@ like this:
 
 ![Alt text](../../imgs/wabot-general.png)
 
+Although that is "50% of the idea" there is still much to think about, like how to handle media, links, contacts.
+And in the processing part, depending on the work we are doing there, one `Message Processor` may not be enough, in that case a Pub/Sub model for the messages would be more appropriate than a queue. 
+
 ## CI/CD
 As I'm learning Cloud and DevOps practices, I tried to come up with a CI/CD pipeline using AWS services only. This section
 shortly describres the final shape of it and the problems I faced.
 	
+![AWS Stack](../../imgs/wabot-awsstack.png)
+
+I didn't have my Github account available when I started this, but I was excited to use CodeCommit thinking it would have
+a smooth integration with CodeBuild. However, I later discovered that ["AWS CodeBuild supports webhook integration with GitHub, GitHub Enterprise Server, and Bitbucket."](https://docs.aws.amazon.com/codebuild/latest/userguide/webhooks.html) but doesn't for CodeCommit. I decided to go with EventBridge events which was simple to configure using CloudFormation:
+
+```yml
+AWSTemplateFormatVersion: ...
+Parameters: ...
+Resources:
+
+  CodeRepository: ...
+  CodeBuildProject: ...
+
+  # EventBridge Rule to Trigger CodeBuild on CodeCommit Push
+  CodeBuildEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Trigger CodeBuild on CodeCommit push"
+      EventPattern:
+        source:
+          - aws.codecommit
+        resources:
+          - !GetAtt CodeRepository.Arn
+        detail:
+          referenceType:
+            - branch
+          referenceName:
+            - test
+      Targets:
+        - Id: "TriggerCodeBuild"
+          Arn: !GetAtt CodeBuildProject.Arn
+          RoleArn: !GetAtt CodeBuildServiceRole.Arn
+```
+And just after this, in the CodeBuild Pipeline, you can see another AWS _quirk_:
+```yml
+version: ...
+phases:
+  pre_build:
+    # ... Login to ECR repo with docker 
+  build:
+    commands:
+      - echo Build started on `date`
+
+      - echo Building INTERCEPTOR Docker image...
+      - cd ./message_interceptor
+
+      # Quirk
+      - docker build -t ${REPOSITORY_URI}:msg-interceptor .
+      - cd ..
+
+      - echo Building PROCESSOR Docker image...
+      - cd ./message_processor
+      # Quirk
+      - docker build -t ${REPOSITORY_URI}:msg-processor .
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push ${REPOSITORY_URI}:msg-interceptor
+      - docker push ${REPOSITORY_URI}:msg-processor
+      # ... Tell EC2 to deploy
+```
+Notice that I'm not building the images as `${REPOSITORY_URI}/image-name:version` but as `${REPOSITORY_URI}:image-name` instead. That's because AWS ECR supports only one image per repository, so you have to do some coded versioning if you want to put more than one image in a repo.
+
+With the images built and pushed, I now used AWS Systems Manager to execute a remote command on a previously created EC2 with
+the CloudFormation template.
+```yml
+version: ...
+phases:
+  pre_build:
+    # ... Login to ECR repo with docker 
+  build:
+    # ... Build and tag images
+  post_build:
+    commands:
+      # ... Push images ...
+      - echo Push completed, remotely exec deploy.sh
+      - aws ssm send-command --instance-ids $EC2_ID --document-name "AWS-RunShellScript" --comment "/home/ec2-user/deploy.sh" --parameters commands=/home/ec2-user/deploy.sh --output text
+```
+The script I'm calling here was created before using the `userData` property of the EC2 in the CloudFormation template.
+It pulls the images from the ECR repo and `docker run`'s them.
+As you can image, this is not scalable at all, but for this prototype this hacky way of deploying was more than enough.
+
+The full scripts and templates are in the repository of the project, but beware: I was (and am) just getting used to CloudFormation and AWS permissions when I wrote them, so there's definitely things to polish. 
 
 ## Final words
 I had a lot of fun with this project, and although I'm not actively using it for now, I do think it could have its value
