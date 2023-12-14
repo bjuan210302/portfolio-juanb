@@ -1,0 +1,74 @@
+---
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Astro description" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>How I turned my WhatsApp chat into an API wrapper - JuanB</title>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>
+<style is:global>
+	@import url("https://fonts.googleapis.com/css?family=Muli:300,400,700,800");
+	html {
+		font-family: system-ui, sans-serif;
+		background: #1f1f1f;
+		background-size: 224px;
+		font-family: "Muli", sans-serif;
+		color: #fefefe;
+	}
+	body {
+		margin: auto;
+		padding: 128px 24px 25vh;
+		max-width: 750px;
+	}
+	code {
+		font-family: Menlo, Monaco, monospace;
+	}
+	pre {
+		border-radius: 10px;
+		padding: 15px;
+		padding-right: 5px;
+		background-color: #666;
+		margin-bottom: 20px;
+	}
+	h1 {
+		color: #dbe6f8;
+		font-size: 40px;
+		font-weight: 800;
+		margin-bottom: 10px;
+		text-wrap: balance;
+	}
+	h2 {
+		color: #dbe6f8;
+		font-size: x-large;
+		font-weight: 600;
+		margin-bottom: 10px;
+	}
+	date {
+		color: #677182;
+		display: block;
+		margin-bottom: 45px;
+	}
+	p {
+		text-rendering: optimizeLegibility;
+		color: #99a3b4;
+		font-size: large;
+		margin-bottom: 20px;
+	}
+	img {
+		border-radius: 10px;
+	}
+</style>
